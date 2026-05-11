@@ -164,3 +164,63 @@ payload = {
 requests.post(url, data=payload)
 
 print(message)
+
+weights_df = pd.DataFrame.from_dict(
+    cleaned_weights,
+    orient='index',
+    columns=['Weight']
+)
+
+weights_df.to_csv("last_weights.csv")
+
+dominant_asset = max(
+    cleaned_weights,
+    key=cleaned_weights.get
+)
+
+if cleaned_weights['Gold'] > 0.35:
+    regime = "Risk-Off"
+else:
+    regime = "Balanced"
+
+if volatility < 0.2:
+    stability = "Stable"
+else:
+    stability = "Moderate Risk"
+
+div_score = "High"
+
+message = f"""
+BLACK-LITTERMAN PORTFOLIO UPDATE
+
+Date: {pd.Timestamp.today().date()}
+
+PORTFOLIO WEIGHTS
+
+Gold: {cleaned_weights['Gold']*100:.2f}%
+Silver: {cleaned_weights['Silver']*100:.2f}%
+Platinum: {cleaned_weights['Platinum']*100:.2f}%
+Palladium: {cleaned_weights['Palladium']*100:.2f}%
+IMOEX: {cleaned_weights['IMOEX']*100:.2f}%
+
+BUY / SELL SIGNALS
+
+Gold: {signals['Gold']}
+Silver: {signals['Silver']}
+Platinum: {signals['Platinum']}
+Palladium: {signals['Palladium']}
+IMOEX: {signals['IMOEX']}
+
+ANALYTICS
+
+Market Regime: {regime}
+Dominant Asset: {dominant_asset}
+Portfolio Stability: {stability}
+Diversification: {div_score}
+
+PERFORMANCE
+
+Expected Return: {expected_return*100:.2f}%
+Volatility: {volatility*100:.2f}%
+Sharpe Ratio: {sharpe:.2f}
+"""
