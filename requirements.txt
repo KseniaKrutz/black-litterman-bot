@@ -4,3 +4,4 @@ numpy
 requests
 PyPortfolioOpt
 cvxpy
+os
