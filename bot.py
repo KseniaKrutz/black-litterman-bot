@@ -181,11 +181,32 @@ div_score = "High"
 message = f"""
 BLACK-LITTERMAN PORTFOLIO UPDATE
 
+Date: {pd.Timestamp.today().date()}
+
+PORTFOLIO WEIGHTS
+
 Gold: {cleaned_weights['Gold']*100:.2f}%
 Silver: {cleaned_weights['Silver']*100:.2f}%
 Platinum: {cleaned_weights['Platinum']*100:.2f}%
 Palladium: {cleaned_weights['Palladium']*100:.2f}%
 IMOEX: {cleaned_weights['IMOEX']*100:.2f}%
+
+BUY / SELL SIGNALS
+
+Gold: {signals['Gold']}
+Silver: {signals['Silver']}
+Platinum: {signals['Platinum']}
+Palladium: {signals['Palladium']}
+IMOEX: {signals['IMOEX']}
+
+ANALYTICS
+
+Market Regime: {regime}
+Dominant Asset: {dominant_asset}
+Portfolio Stability: {stability}
+Diversification: {div_score}
+
+PERFORMANCE
 
 Expected Return: {expected_return*100:.2f}%
 Volatility: {volatility*100:.2f}%
@@ -266,3 +287,6 @@ Expected Return: {expected_return*100:.2f}%
 Volatility: {volatility*100:.2f}%
 Sharpe Ratio: {sharpe:.2f}
 """
+
+if cleaned_weights['Gold'] + cleaned_weights['Silver'] > 0.7:
+    regime = "Defensive Metals Dominance"
