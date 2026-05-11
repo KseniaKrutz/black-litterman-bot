@@ -130,7 +130,49 @@ cleaned_weights = ef.clean_weights()
 # PORTFOLIO PERFORMANCE
 # =====================================================
 
-expected_return, volatility, sharpe = ef.portfolio_performance()
+expected_return, volatility, sharpe = ef.portfolio_performance(
+    risk_free_rate=0.05
+)
+
+# =====================================================
+# BUY / SELL SIGNALS
+# =====================================================
+
+signals = {}
+
+for asset in cleaned_weights:
+
+    diff = cleaned_weights[asset] - market_weights[asset]
+
+    if diff > 0.03:
+        signals[asset] = f"BUY (+{diff*100:.1f}%)"
+
+    elif diff < -0.03:
+        signals[asset] = f"SELL ({diff*100:.1f}%)"
+
+    else:
+        signals[asset] = "HOLD"
+
+# =====================================================
+# ANALYTICS
+# =====================================================
+
+dominant_asset = max(
+    cleaned_weights,
+    key=cleaned_weights.get
+)
+
+if cleaned_weights['Gold'] > 0.35:
+    regime = "Risk-Off"
+else:
+    regime = "Balanced"
+
+if volatility < 0.20:
+    stability = "Stable"
+else:
+    stability = "Moderate Risk"
+
+div_score = "High"
 
 # =====================================================
 # TELEGRAM MESSAGE
