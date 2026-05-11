@@ -4,4 +4,6 @@ numpy
 requests
 PyPortfolioOpt
 cvxpy
-os
+scipy
+ecos
+osqp
