@@ -2,6 +2,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import requests
+import os
 
 from pypfopt import risk_models
 from pypfopt import EfficientFrontier
@@ -14,8 +15,8 @@ from pypfopt.black_litterman import (
 # TELEGRAM SETTINGS
 # =====================================================
 
-TOKEN = "YOUR_BOT_TOKEN"
-CHAT_ID = "YOUR_CHAT_ID"
+TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
 # =====================================================
 # DOWNLOAD DATA
