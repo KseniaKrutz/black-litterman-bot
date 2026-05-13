@@ -90,12 +90,15 @@ prior = market_implied_prior_returns(
 
 recent_returns = (
     returns
-    .tail(20)
+    .tail(60)
     .mean()
     * 252
 )
 
-views = recent_returns.to_dict()
+views = recent_returns.clip(
+    lower=0.03,
+    upper=0.25
+).to_dict()
 
 print("Dynamic Views:")
 print(views)
