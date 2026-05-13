@@ -37,7 +37,7 @@ for asset, ticker in tickers.items():
     df = yf.download(
         ticker,
         start='2010-01-01',
-        interval='1mo',
+        interval='1d',
         auto_adjust=True
     )
 
@@ -57,7 +57,7 @@ returns = data.pct_change().dropna()
 
 S = risk_models.sample_cov(
     data,
-    frequency=12
+    frequency=252
 )
 
 # =====================================================
@@ -85,16 +85,20 @@ prior = market_implied_prior_returns(
 )
 
 # =====================================================
-# BLACK-LITTERMAN VIEWS
+# DYNAMIC VIEWS (Momentum-based)
 # =====================================================
 
-views = {
-    'Gold': 0.14,
-    'Silver': 0.11,
-    'Platinum': 0.07,
-    'Palladium': 0.09,
-    'IMOEX': 0.08
-}
+recent_returns = (
+    returns
+    .tail(20)
+    .mean()
+    * 252
+)
+
+views = recent_returns.to_dict()
+
+print("Dynamic Views:")
+print(views)
 
 # =====================================================
 # BLACK-LITTERMAN MODEL
