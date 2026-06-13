@@ -11,24 +11,7 @@ from pypfopt.black_litterman import (
     market_implied_prior_returns
 )
 
-# =====================================================
-# EQUAL WEIGHT BENCHMARK
-# =====================================================
 
-equal_weights = np.array([0.2, 0.2, 0.2, 0.2, 0.2])
-
-benchmark_return = np.dot(
-    bl_returns.values,
-    equal_weights
-)
-
-benchmark_volatility = np.sqrt(
-    equal_weights.T @ bl_cov.values @ equal_weights
-)
-
-benchmark_sharpe = (
-    benchmark_return - 0.05
-) / benchmark_volatility
 
 # =====================================================
 # TELEGRAM SETTINGS
@@ -136,6 +119,24 @@ bl_returns = bl.bl_returns()
 
 bl_cov = bl.bl_cov()
 
+# =====================================================
+# EQUAL WEIGHT BENCHMARK
+# =====================================================
+
+equal_weights = np.array([0.2, 0.2, 0.2, 0.2, 0.2])
+
+benchmark_return = np.dot(
+    bl_returns.values,
+    equal_weights
+)
+
+benchmark_volatility = np.sqrt(
+    equal_weights.T @ bl_cov.values @ equal_weights
+)
+
+benchmark_sharpe = (
+    benchmark_return - 0.05
+) / benchmark_volatility
 # =====================================================
 # OPTIMIZATION
 # =====================================================
@@ -247,6 +248,7 @@ Return Delta:
 
 Sharpe Delta:
 {(sharpe-benchmark_sharpe):.2f}
+"""
 # =====================================================
 # SEND MESSAGE
 # =====================================================
