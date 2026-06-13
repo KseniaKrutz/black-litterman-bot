@@ -12,6 +12,25 @@ from pypfopt.black_litterman import (
 )
 
 # =====================================================
+# EQUAL WEIGHT BENCHMARK
+# =====================================================
+
+equal_weights = np.array([0.2, 0.2, 0.2, 0.2, 0.2])
+
+benchmark_return = np.dot(
+    bl_returns.values,
+    equal_weights
+)
+
+benchmark_volatility = np.sqrt(
+    equal_weights.T @ bl_cov.values @ equal_weights
+)
+
+benchmark_sharpe = (
+    benchmark_return - 0.05
+) / benchmark_volatility
+
+# =====================================================
 # TELEGRAM SETTINGS
 # =====================================================
 
@@ -215,11 +234,19 @@ Diversification: {div_score}
 
 PERFORMANCE
 
-Expected Return: {expected_return*100:.2f}%
-Volatility: {volatility*100:.2f}%
-Sharpe Ratio: {sharpe:.2f}
-"""
+BENCHMARK (20% EACH)
 
+Expected Return: {benchmark_return*100:.2f}%
+Volatility: {benchmark_volatility*100:.2f}%
+Sharpe Ratio: {benchmark_sharpe:.2f}
+
+BLACK-LITTERMAN ADVANTAGE
+
+Return Delta:
+{(expected_return-benchmark_return)*100:.2f}%
+
+Sharpe Delta:
+{(sharpe-benchmark_sharpe):.2f}
 # =====================================================
 # SEND MESSAGE
 # =====================================================
@@ -297,3 +324,23 @@ Sharpe Ratio: {sharpe:.2f}
 
 if cleaned_weights['Gold'] + cleaned_weights['Silver'] > 0.7:
     regime = "Defensive Metals Dominance"
+comparison = pd.DataFrame({
+    "Portfolio": ["Equal Weight", "Black-Litterman"],
+    "Return": [
+        benchmark_return,
+        expected_return
+    ],
+    "Volatility": [
+        benchmark_volatility,
+        volatility
+    ],
+    "Sharpe": [
+        benchmark_sharpe,
+        sharpe
+    ]
+})
+
+comparison.to_csv(
+    "portfolio_comparison.csv",
+    index=False
+)
