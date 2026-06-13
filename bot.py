@@ -235,13 +235,21 @@ Diversification: {div_score}
 
 PERFORMANCE
 
+PERFORMANCE
+
+BLACK-LITTERMAN
+
+Expected Return: {expected_return*100:.2f}%
+Volatility: {volatility*100:.2f}%
+Sharpe Ratio: {sharpe:.2f}
+
 BENCHMARK (20% EACH)
 
 Expected Return: {benchmark_return*100:.2f}%
 Volatility: {benchmark_volatility*100:.2f}%
 Sharpe Ratio: {benchmark_sharpe:.2f}
 
-BLACK-LITTERMAN ADVANTAGE
+ADVANTAGE
 
 Return Delta:
 {(expected_return-benchmark_return)*100:.2f}%
