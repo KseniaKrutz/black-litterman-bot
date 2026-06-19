@@ -151,6 +151,65 @@ benchmark_sharpe = (
     benchmark_return - 0.05
 ) / benchmark_volatility
 
+
+# =====================================================
+# MARKOWITZ PORTFOLIO
+# =====================================================
+
+markowitz_returns = (
+    returns
+    .tail(252)
+    .mean()
+    * 252
+)
+
+markowitz_cov = S.copy()
+
+ef_markowitz = EfficientFrontier(
+    markowitz_returns,
+    markowitz_cov,
+    weight_bounds=(0.05, 0.40)
+)
+
+try:
+
+    ef_markowitz.max_sharpe(
+        risk_free_rate=0.05
+    )
+
+except:
+
+    ef_markowitz.max_quadratic_utility()
+
+markowitz_weights = ef_markowitz.clean_weights()
+
+(
+    markowitz_return,
+    markowitz_volatility,
+    markowitz_sharpe
+) = ef_markowitz.portfolio_performance(
+    risk_free_rate=0.05
+)
+
+print("\n========== MARKOWITZ ==========")
+
+print("Weights:")
+print(markowitz_weights)
+
+print(
+    f"\nReturn: {markowitz_return:.4f}"
+)
+
+print(
+    f"Volatility: {markowitz_volatility:.4f}"
+)
+
+print(
+    f"Sharpe: {markowitz_sharpe:.4f}"
+)
+
+
+
 # =====================================================
 # OPTIMIZATION
 # =====================================================
@@ -256,6 +315,12 @@ weights_text = "\n".join(
         for asset, weight in cleaned_weights.items()
     ]
 )
+markowitz_text = "\n".join(
+    [
+        f"{asset}: {weight*100:.2f}%"
+        for asset, weight in markowitz_weights.items()
+    ]
+)
 
 signals_text = "\n".join(
     [
@@ -296,6 +361,14 @@ Expected Return: {benchmark_return*100:.2f}%
 Volatility: {benchmark_volatility*100:.2f}%
 Sharpe Ratio: {benchmark_sharpe:.2f}
 
+MARKOWITZ PORTFOLIO
+
+{markowitz_text}
+
+Expected Return: {markowitz_return*100:.2f}%
+Volatility: {markowitz_volatility*100:.2f}%
+Sharpe Ratio: {markowitz_sharpe:.2f}
+
 ADVANTAGE
 
 Return Delta: {(expected_return-benchmark_return)*100:.2f}%
@@ -329,17 +402,24 @@ pd.DataFrame.from_dict(
 ).to_csv("last_weights.csv")
 
 comparison = pd.DataFrame({
-    "Portfolio": ["Equal Weight", "Black-Litterman"],
+    "Portfolio": [
+        "Equal Weight",
+        "Markowitz",
+        "Black-Litterman"
+    ],
     "Return": [
         benchmark_return,
+        markowitz_return,
         expected_return
     ],
     "Volatility": [
         benchmark_volatility,
+        markowitz_volatility,
         volatility
     ],
     "Sharpe": [
         benchmark_sharpe,
+        markowitz_sharpe,
         sharpe
     ]
 })
