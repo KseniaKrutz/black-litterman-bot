@@ -11,8 +11,6 @@ from pypfopt.black_litterman import (
     market_implied_prior_returns
 )
 
-
-
 # =====================================================
 # TELEGRAM SETTINGS
 # =====================================================
@@ -25,11 +23,11 @@ CHAT_ID = os.getenv("CHAT_ID")
 # =====================================================
 
 tickers = {
-    'Gold': 'GC=F',
-    'Silver': 'SI=F',
-    'Platinum': 'PL=F',
-    'Palladium': 'PA=F',
-    'IMOEX': 'IMOEX.ME'
+    "Gold": "GC=F",
+    "Silver": "SI=F",
+    "Platinum": "PL=F",
+    "Palladium": "PA=F",
+    "IMOEX": "IMOEX.ME"
 }
 
 data = pd.DataFrame()
@@ -38,12 +36,13 @@ for asset, ticker in tickers.items():
 
     df = yf.download(
         ticker,
-        start='2010-01-01',
-        interval='1d',
-        auto_adjust=True
+        start="2018-01-01",
+        interval="1d",
+        auto_adjust=True,
+        progress=False
     )
 
-    data[asset] = df['Close']
+    data[asset] = df["Close"]
 
 data = data.dropna()
 
@@ -54,11 +53,19 @@ data = data.dropna()
 returns = data.pct_change().dropna()
 
 # =====================================================
+# RECENT DATA (1 YEAR)
+# =====================================================
+
+lookback_days = 252
+
+recent_prices = data.tail(lookback_days)
+
+# =====================================================
 # COVARIANCE MATRIX
 # =====================================================
 
-S = risk_models.sample_cov(
-    data,
+S = risk_models.exp_cov(
+    recent_prices,
     frequency=252
 )
 
@@ -67,11 +74,11 @@ S = risk_models.sample_cov(
 # =====================================================
 
 market_weights = {
-    'Gold': 0.30,
-    'Silver': 0.20,
-    'Platinum': 0.15,
-    'Palladium': 0.15,
-    'IMOEX': 0.20
+    "Gold": 0.30,
+    "Silver": 0.20,
+    "Platinum": 0.15,
+    "Palladium": 0.15,
+    "IMOEX": 0.20
 }
 
 # =====================================================
@@ -87,43 +94,52 @@ prior = market_implied_prior_returns(
 )
 
 # =====================================================
-# DYNAMIC VIEWS (Momentum-based)
+# DYNAMIC VIEWS
 # =====================================================
 
-recent_returns = (
-    returns
-    .tail(60)
-    .mean()
-    * 252
+momentum_20 = returns.tail(20).mean() * 252
+momentum_60 = returns.tail(60).mean() * 252
+
+views = (
+    0.7 * momentum_20 +
+    0.3 * momentum_60
 )
 
-views = recent_returns.clip(
-    lower=0.03,
-    upper=0.25
-).to_dict()
+views = views.clip(
+    lower=-0.30,
+    upper=0.30
+)
 
-print("Dynamic Views:")
-print(views)
+views = views.to_dict()
+
+print("\n========== PRIOR RETURNS ==========")
+print(prior)
+
+print("\n========== VIEWS ==========")
+print(pd.Series(views))
 
 # =====================================================
-# BLACK-LITTERMAN MODEL
+# BLACK-LITTERMAN
 # =====================================================
 
 bl = BlackLittermanModel(
     S,
     pi=prior,
-    absolute_views=views
+    absolute_views=views,
+    tau=0.05
 )
 
 bl_returns = bl.bl_returns()
-
 bl_cov = bl.bl_cov()
 
+print("\n========== BL RETURNS ==========")
+print(bl_returns)
+
 # =====================================================
-# EQUAL WEIGHT BENCHMARK
+# BENCHMARK
 # =====================================================
 
-equal_weights = np.array([0.2, 0.2, 0.2, 0.2, 0.2])
+equal_weights = np.array([0.2] * 5)
 
 benchmark_return = np.dot(
     bl_returns.values,
@@ -137,6 +153,7 @@ benchmark_volatility = np.sqrt(
 benchmark_sharpe = (
     benchmark_return - 0.05
 ) / benchmark_volatility
+
 # =====================================================
 # OPTIMIZATION
 # =====================================================
@@ -144,17 +161,17 @@ benchmark_sharpe = (
 ef = EfficientFrontier(
     bl_returns,
     bl_cov,
-    weight_bounds=(0.05, 0.40)
+    weight_bounds=(0.00, 0.60)
 )
 
-weights = ef.max_sharpe(
+ef.max_sharpe(
     risk_free_rate=0.05
 )
 
 cleaned_weights = ef.clean_weights()
 
 # =====================================================
-# PORTFOLIO PERFORMANCE
+# PERFORMANCE
 # =====================================================
 
 expected_return, volatility, sharpe = ef.portfolio_performance(
@@ -162,7 +179,7 @@ expected_return, volatility, sharpe = ef.portfolio_performance(
 )
 
 # =====================================================
-# BUY / SELL SIGNALS
+# SIGNALS
 # =====================================================
 
 signals = {}
@@ -189,21 +206,55 @@ dominant_asset = max(
     key=cleaned_weights.get
 )
 
-if cleaned_weights['Gold'] > 0.35:
+if cleaned_weights["Gold"] >= 0.40:
     regime = "Risk-Off"
+
+elif cleaned_weights["IMOEX"] >= 0.35:
+    regime = "Risk-On"
+
 else:
     regime = "Balanced"
 
-if volatility < 0.20:
-    stability = "Stable"
-else:
+if volatility < 0.15:
+    stability = "Low Risk"
+
+elif volatility < 0.25:
     stability = "Moderate Risk"
 
-div_score = "High"
+else:
+    stability = "High Risk"
+
+effective_assets = sum(
+    1 for w in cleaned_weights.values()
+    if w > 0.05
+)
+
+if effective_assets >= 4:
+    diversification = "High"
+
+elif effective_assets >= 3:
+    diversification = "Medium"
+
+else:
+    diversification = "Low"
 
 # =====================================================
-# TELEGRAM MESSAGE
+# MESSAGE
 # =====================================================
+
+weights_text = "\n".join(
+    [
+        f"{asset}: {weight*100:.2f}%"
+        for asset, weight in cleaned_weights.items()
+    ]
+)
+
+signals_text = "\n".join(
+    [
+        f"{asset}: {signal}"
+        for asset, signal in signals.items()
+    ]
+)
 
 message = f"""
 BLACK-LITTERMAN PORTFOLIO UPDATE
@@ -212,32 +263,20 @@ Date: {pd.Timestamp.today().date()}
 
 PORTFOLIO WEIGHTS
 
-Gold: {cleaned_weights['Gold']*100:.2f}%
-Silver: {cleaned_weights['Silver']*100:.2f}%
-Platinum: {cleaned_weights['Platinum']*100:.2f}%
-Palladium: {cleaned_weights['Palladium']*100:.2f}%
-IMOEX: {cleaned_weights['IMOEX']*100:.2f}%
+{weights_text}
 
 BUY / SELL SIGNALS
 
-Gold: {signals['Gold']}
-Silver: {signals['Silver']}
-Platinum: {signals['Platinum']}
-Palladium: {signals['Palladium']}
-IMOEX: {signals['IMOEX']}
+{signals_text}
 
 ANALYTICS
 
 Market Regime: {regime}
 Dominant Asset: {dominant_asset}
 Portfolio Stability: {stability}
-Diversification: {div_score}
+Diversification: {diversification}
 
 PERFORMANCE
-
-PERFORMANCE
-
-BLACK-LITTERMAN
 
 Expected Return: {expected_return*100:.2f}%
 Volatility: {volatility*100:.2f}%
@@ -251,14 +290,15 @@ Sharpe Ratio: {benchmark_sharpe:.2f}
 
 ADVANTAGE
 
-Return Delta:
-{(expected_return-benchmark_return)*100:.2f}%
+Return Delta: {(expected_return-benchmark_return)*100:.2f}%
 
-Sharpe Delta:
-{(sharpe-benchmark_sharpe):.2f}
+Sharpe Delta: {(sharpe-benchmark_sharpe):.2f}
 """
+
+print(message)
+
 # =====================================================
-# SEND MESSAGE
+# TELEGRAM
 # =====================================================
 
 url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
@@ -270,70 +310,16 @@ payload = {
 
 requests.post(url, data=payload)
 
-print(message)
+# =====================================================
+# SAVE FILES
+# =====================================================
 
-weights_df = pd.DataFrame.from_dict(
+pd.DataFrame.from_dict(
     cleaned_weights,
-    orient='index',
-    columns=['Weight']
-)
+    orient="index",
+    columns=["Weight"]
+).to_csv("last_weights.csv")
 
-weights_df.to_csv("last_weights.csv")
-
-dominant_asset = max(
-    cleaned_weights,
-    key=cleaned_weights.get
-)
-
-if cleaned_weights['Gold'] > 0.35:
-    regime = "Risk-Off"
-else:
-    regime = "Balanced"
-
-if volatility < 0.2:
-    stability = "Stable"
-else:
-    stability = "Moderate Risk"
-
-div_score = "High"
-
-message = f"""
-BLACK-LITTERMAN PORTFOLIO UPDATE
-
-Date: {pd.Timestamp.today().date()}
-
-PORTFOLIO WEIGHTS
-
-Gold: {cleaned_weights['Gold']*100:.2f}%
-Silver: {cleaned_weights['Silver']*100:.2f}%
-Platinum: {cleaned_weights['Platinum']*100:.2f}%
-Palladium: {cleaned_weights['Palladium']*100:.2f}%
-IMOEX: {cleaned_weights['IMOEX']*100:.2f}%
-
-BUY / SELL SIGNALS
-
-Gold: {signals['Gold']}
-Silver: {signals['Silver']}
-Platinum: {signals['Platinum']}
-Palladium: {signals['Palladium']}
-IMOEX: {signals['IMOEX']}
-
-ANALYTICS
-
-Market Regime: {regime}
-Dominant Asset: {dominant_asset}
-Portfolio Stability: {stability}
-Diversification: {div_score}
-
-PERFORMANCE
-
-Expected Return: {expected_return*100:.2f}%
-Volatility: {volatility*100:.2f}%
-Sharpe Ratio: {sharpe:.2f}
-"""
-
-if cleaned_weights['Gold'] + cleaned_weights['Silver'] > 0.7:
-    regime = "Defensive Metals Dominance"
 comparison = pd.DataFrame({
     "Portfolio": ["Equal Weight", "Black-Litterman"],
     "Return": [
