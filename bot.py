@@ -374,6 +374,17 @@ ADVANTAGE
 Return Delta: {(expected_return-benchmark_return)*100:.2f}%
 
 Sharpe Delta: {(sharpe-benchmark_sharpe):.2f}
+
+MARKOWITZ VS BLACK-LITTERMAN
+
+Markowitz Return: {markowitz_return*100:.2f}%
+Markowitz Volatility: {markowitz_volatility*100:.2f}%
+Markowitz Sharpe: {markowitz_sharpe:.2f}
+
+Black-Litterman Return: {expected_return*100:.2f}%
+Black-Litterman Volatility: {volatility*100:.2f}%
+Black-Litterman Sharpe: {sharpe:.2f}
+
 """
 
 print(message)
@@ -394,12 +405,6 @@ requests.post(url, data=payload)
 # =====================================================
 # SAVE FILES
 # =====================================================
-
-pd.DataFrame.from_dict(
-    cleaned_weights,
-    orient="index",
-    columns=["Weight"]
-).to_csv("last_weights.csv")
 
 comparison = pd.DataFrame({
     "Portfolio": [
@@ -424,6 +429,7 @@ comparison = pd.DataFrame({
     ]
 })
 
+print(comparison)
 comparison.to_csv(
     "portfolio_comparison.csv",
     index=False
