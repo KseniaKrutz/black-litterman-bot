@@ -106,8 +106,8 @@ views = (
 )
 
 views = views.clip(
-    lower=-0.30,
-    upper=0.30
+    lower=-0.10,
+    upper=0.10
 )
 
 views = views.to_dict()
@@ -161,12 +161,17 @@ benchmark_sharpe = (
 ef = EfficientFrontier(
     bl_returns,
     bl_cov,
-    weight_bounds=(0.00, 0.60)
+    weight_bounds=(0.0, 0.60)
 )
 
-ef.max_sharpe(
-    risk_free_rate=0.05
-)
+try:
+    print("Running max_sharpe...")
+    ef.max_sharpe(risk_free_rate=0.05)
+
+except Exception as e:
+    print(f"Max Sharpe failed: {e}")
+    print("Switching to max_quadratic_utility...")
+    ef.max_quadratic_utility()
 
 cleaned_weights = ef.clean_weights()
 
