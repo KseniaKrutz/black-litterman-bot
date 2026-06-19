@@ -64,7 +64,7 @@ recent_prices = data.tail(lookback_days)
 # COVARIANCE MATRIX
 # =====================================================
 
-S = risk_models.exp_cov(
+S = risk_models.sample_cov(
     recent_prices,
     frequency=252
 )
@@ -97,20 +97,17 @@ prior = market_implied_prior_returns(
 # DYNAMIC VIEWS
 # =====================================================
 
-momentum_20 = returns.tail(20).mean() * 252
-momentum_60 = returns.tail(60).mean() * 252
-
-views = (
-    0.7 * momentum_20 +
-    0.3 * momentum_60
+recent_returns = (
+    returns
+    .tail(60)
+    .mean()
+    * 252
 )
 
-views = views.clip(
-    lower=-0.10,
-    upper=0.10
-)
-
-views = views.to_dict()
+views = recent_returns.clip(
+    lower=0.03,
+    upper=0.25
+).to_dict()
 
 print("\n========== PRIOR RETURNS ==========")
 print(prior)
@@ -161,16 +158,22 @@ benchmark_sharpe = (
 ef = EfficientFrontier(
     bl_returns,
     bl_cov,
-    weight_bounds=(0.0, 0.60)
+    weight_bounds=(0.05, 0.40)
 )
 
 try:
+
     print("Running max_sharpe...")
-    ef.max_sharpe(risk_free_rate=0.05)
+
+    ef.max_sharpe(
+        risk_free_rate=0.05
+    )
 
 except Exception as e:
+
     print(f"Max Sharpe failed: {e}")
     print("Switching to max_quadratic_utility...")
+
     ef.max_quadratic_utility()
 
 cleaned_weights = ef.clean_weights()
@@ -211,15 +214,15 @@ dominant_asset = max(
     key=cleaned_weights.get
 )
 
-if cleaned_weights["Gold"] >= 0.40:
+if cleaned_weights["Gold"] >= 0.35:
     regime = "Risk-Off"
 
-elif cleaned_weights["IMOEX"] >= 0.35:
+elif cleaned_weights["IMOEX"] >= 0.30:
     regime = "Risk-On"
 
 else:
     regime = "Balanced"
-
+    
 if volatility < 0.15:
     stability = "Low Risk"
 
